@@ -1,0 +1,174 @@
+#include <Servo.h>   //Arduino library
+String voice;
+int pos;
+Servo elbowservo;
+Servo gripperservo;
+int LM1=3;
+int LM2=5;
+int RM1=6;
+int RM2=9;
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(LM1,OUTPUT);
+  pinMode(LM2,OUTPUT);
+  pinMode(RM1,OUTPUT);
+  pinMode(RM2,OUTPUT);
+  elbowservo.attach(10);
+  elbowservo.write(75);
+  gripperservo.attach(11);
+  gripperservo.write(75);
+}
+void forward_car()
+{
+ analogWrite(LM1,255);
+  analogWrite(LM2,0);
+  analogWrite(RM1,255);
+  analogWrite(RM2,0);
+}
+void backward_car()
+{
+   analogWrite(LM1,0);
+  analogWrite(LM2,255);
+  analogWrite(RM1,0);
+  analogWrite(RM2,255);
+}
+void right_car()
+{
+   analogWrite(LM1,255);
+  analogWrite(LM2,0);
+  analogWrite(RM1,0);
+  analogWrite(RM2,0);
+}
+void left_car()
+{
+   analogWrite(LM1,0);
+  analogWrite(LM2,0);
+  analogWrite(RM1,255);
+  analogWrite(RM2,0);
+}
+void stop_car()
+{
+  analogWrite(LM1,0);
+  analogWrite(LM2,0);
+  analogWrite(RM1,0);
+  analogWrite(RM2,0);
+}
+void loop()
+{
+  while (Serial.available())
+  {
+    String c = Serial.readString();
+    if (c == '#')
+    {
+      break;
+    }
+    voice += c;
+  }
+  if (voice.length() > 0)
+  {
+    if ((voice == "go ahead")||(voice=="forward"))
+    {
+      Serial.println("forward");
+      forward_car(); 
+    }
+    else if ((voice == "go back")||(voice=="backward"))
+    {
+      Serial.println("back");
+      backward_car();  
+    }
+    else if ((voice == "turn left")||(voice=="left"))
+    {
+      while( (voice == "turn left")||(voice=="left"))
+      {
+        Serial.println("left");
+        left_car();
+        while (Serial.available())
+        {
+          String c = Serial.readString();
+          if (c == '#')
+          {
+            break;
+          }
+          voice += c;
+        }
+      }
+    }
+    else if (voice == "turn right")
+    {
+      while (voice == "turn right")
+      {
+        Serial.println("right");
+        right_car();
+        while (Serial.available())
+        {
+          String c = Serial.readString();
+          if (c == '#')
+          {
+            break;
+          }
+          voice += c;
+        }
+      }
+    }
+    else if (voice == "stop")
+    {
+      Serial.println("stop");
+      stop_car();
+    }
+    else if (voice == "take up")
+    { voice="";
+      Serial.println("picking");
+      for (pos = 80; pos >= 0; pos -= 1)
+      { Serial.println("down");
+        
+        elbowservo.write(pos);
+        delay(1000);
+        while (Serial.available())
+        {
+          String c = Serial.readString();
+          if (c == '#')
+          {
+            break;
+          }
+          voice += c;
+        }
+        if (voice == "stop hand")
+        {
+          Serial.println("arm stopped");
+          break;
+        }
+      }
+      int p = pos;
+      gripperservo.write(0);
+      elbowservo.write(90);
+    }
+    else if (voice == "drop")
+    { voice="";
+      Serial.println("dropping");
+      for(pos=80;pos>=0;pos-=1)
+      { 
+       Serial.println("down");
+       elbowservo.write(pos);
+       delay(1000);
+       while (Serial.available())
+        {
+          String c = Serial.readString();
+          if (c == '#')
+          {
+            break;
+          }
+          voice += c;
+        }
+         if(voice=="place")
+       {
+        Serial.println("placed");
+        break;
+       }
+      }  
+      gripperservo.write(90);
+      elbowservo.write(90);
+    }
+  }
+ voice = "";
+}
